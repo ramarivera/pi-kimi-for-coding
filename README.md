@@ -1,4 +1,4 @@
-# pi-kimi-for-coding
+# @ramarivera/pi-kimi-for-coding
 
 A Pi extension that adds a dedicated **Kimi For Coding OAuth** provider using the official Kimi device flow plus Kimi-specific request shaping.
 
@@ -13,6 +13,12 @@ A Pi extension that adds a dedicated **Kimi For Coding OAuth** provider using th
 - refreshes OAuth tokens and re-discovers model metadata
 
 ## Install
+
+### From npm
+
+```bash
+pi install npm:@ramarivera/pi-kimi-for-coding
+```
 
 ### From GitHub
 
