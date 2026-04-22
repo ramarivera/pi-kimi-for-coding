@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent"
-import type { Model, OAuthCredentials, SimpleStreamOptions, ThinkingLevel } from "@mariozechner/pi-ai"
+import type { Api, Model, OAuthCredentials, SimpleStreamOptions, ThinkingLevel } from "@mariozechner/pi-ai"
 import { streamSimpleOpenAICompletions } from "@mariozechner/pi-ai"
 import { API_BASE_URL, DEFAULT_CONTEXT_WINDOW, DEFAULT_MAX_TOKENS, MODEL_ID, PROVIDER_ID } from "./constants.ts"
 import { kimiHeaders } from "./headers.ts"
@@ -86,7 +86,7 @@ export function modifyKimiModelsForCredentials<T extends Array<Record<string, un
 }
 
 export function streamKimiForCoding(
-  model: Model<"openai-completions">,
+  model: Model<Api>,
   context: Parameters<typeof streamSimpleOpenAICompletions>[1],
   options?: SimpleStreamOptions,
 ) {
@@ -95,10 +95,11 @@ export function streamKimiForCoding(
     ...(options?.headers ?? {}),
   }
 
-  const wireModelId = (model as Model<"openai-completions"> & { wireModelId?: string }).wireModelId
+  const openaiModel = model as Model<"openai-completions"> & { wireModelId?: string }
+  const wireModelId = openaiModel.wireModelId
   const userOnPayload = options?.onPayload
 
-  return streamSimpleOpenAICompletions(model, context, {
+  return streamSimpleOpenAICompletions(openaiModel, context, {
     ...options,
     headers: mergedHeaders,
     onPayload: async (payload, payloadModel) => {
@@ -126,6 +127,6 @@ export default function extension(pi: ExtensionAPI) {
       getApiKey: (credentials: OAuthCredentials) => credentials.access,
       modifyModels: (models, credentials) => modifyKimiModelsForCredentials(models as never, credentials),
     },
-    streamSimple: streamKimiForCoding as any,
+    streamSimple: streamKimiForCoding,
   })
 }
