@@ -10,7 +10,7 @@ export const DEFAULT_MODELS = [
     id: MODEL_ID,
     name: "Kimi For Coding",
     reasoning: true,
-    input: ["text"] as Array<"text" | "image">,
+    input: ["text", "image"] as Array<"text" | "image">,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: DEFAULT_CONTEXT_WINDOW,
     maxTokens: DEFAULT_MAX_TOKENS,

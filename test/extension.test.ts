@@ -39,6 +39,10 @@ test("modifyKimiModelsForCredentials patches runtime model metadata from login d
   expect(next[0]?.id).toBe(MODEL_ID)
 })
 
+test("Kimi model advertises both text and image input", () => {
+  expect(DEFAULT_MODELS[0]?.input).toEqual(["text", "image"])
+})
+
 test("extension registers the custom provider with Pi", () => {
   let captured: { name: string; config: unknown } | undefined
   extension({
