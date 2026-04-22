@@ -15,6 +15,7 @@ export const DEFAULT_MODELS = [
     contextWindow: DEFAULT_CONTEXT_WINDOW,
     maxTokens: DEFAULT_MAX_TOKENS,
     compat: {
+      supportsDeveloperRole: false,
       supportsReasoningEffort: true,
       reasoningEffortMap: {
         minimal: "low",

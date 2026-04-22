@@ -51,3 +51,7 @@ test("extension registers the custom provider with Pi", () => {
   expect((captured?.config as { models: Array<{ id: string }> }).models[0]?.id).toBe(MODEL_ID)
   expect((captured?.config as { oauth: { name: string } }).oauth.name).toBe("Kimi For Coding")
 })
+
+test("Kimi model compat disables developer role so system prompts stay system messages", () => {
+  expect(DEFAULT_MODELS[0]?.compat?.supportsDeveloperRole).toBe(false)
+})
