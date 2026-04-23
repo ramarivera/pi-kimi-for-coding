@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent"
 import type { Api, Model, OAuthCredentials, SimpleStreamOptions, ThinkingLevel } from "@mariozechner/pi-ai"
 import { streamSimpleOpenAICompletions } from "@mariozechner/pi-ai"
 import { API_BASE_URL, DEFAULT_CONTEXT_WINDOW, DEFAULT_MAX_TOKENS, MODEL_ID, PROVIDER_ID } from "./constants.ts"
-import { kimiHeaders } from "./headers.ts"
+import { createKimiFetchWrapper, kimiHeaders } from "./headers.ts"
 import { loginWithDeviceFlow, refreshKimiCredentials, type KimiOAuthCredentials } from "./oauth.ts"
 
 export const DEFAULT_MODELS = [
@@ -99,8 +99,11 @@ export function streamKimiForCoding(
   const openaiModel = model as Model<"openai-completions"> & { wireModelId?: string }
   const wireModelId = openaiModel.wireModelId
   const userOnPayload = options?.onPayload
+  const originalFetch = globalThis.fetch
+  const wrappedFetch = createKimiFetchWrapper(originalFetch)
+  globalThis.fetch = wrappedFetch
 
-  return streamSimpleOpenAICompletions(openaiModel, context, {
+  const stream = streamSimpleOpenAICompletions(openaiModel, context, {
     ...options,
     headers: mergedHeaders,
     onPayload: async (payload, payloadModel) => {
@@ -114,6 +117,14 @@ export function streamKimiForCoding(
       return userPayload ?? basePayload
     },
   })
+
+  void stream.result().finally(() => {
+    if (globalThis.fetch === wrappedFetch) {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  return stream
 }
 
 export default function extension(pi: ExtensionAPI) {

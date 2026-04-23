@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { asciiHeaderValue, getDeviceId, kimiDeviceModel, kimiHeaders } from "../src/headers.ts"
+import { asciiHeaderValue, createKimiFetchWrapper, getDeviceId, isKimiApiUrl, kimiDeviceModel, kimiHeaders, stripOpenAISDKFingerprintHeaders } from "../src/headers.ts"
 
 test("kimiHeaders emits the expected fingerprint keys", () => {
   const headers = kimiHeaders()
@@ -34,4 +34,54 @@ test("device id is stable and 32-char lowercase hex", () => {
   const second = getDeviceId()
   expect(first).toMatch(/^[0-9a-f]{32}$/)
   expect(second).toBe(first)
+})
+
+test("Kimi URL detection matches auth and API hosts only", () => {
+  expect(isKimiApiUrl("https://api.kimi.com/coding/v1/chat/completions")).toBe(true)
+  expect(isKimiApiUrl("https://auth.kimi.com/api/oauth/token")).toBe(true)
+  expect(isKimiApiUrl("https://api.openai.com/v1/chat/completions")).toBe(false)
+})
+
+test("OpenAI SDK fingerprint headers are stripped for Kimi requests", () => {
+  const headers = stripOpenAISDKFingerprintHeaders(
+    new Headers({
+      "x-stainless-lang": "js",
+      "x-stainless-runtime": "node",
+      "User-Agent": "KimiCLI/1.37.0",
+      "X-Msh-Platform": "kimi_cli",
+    }),
+  )
+
+  expect(headers.get("x-stainless-lang")).toBeNull()
+  expect(headers.get("x-stainless-runtime")).toBeNull()
+  expect(headers.get("User-Agent")).toBe("KimiCLI/1.37.0")
+  expect(headers.get("X-Msh-Platform")).toBe("kimi_cli")
+})
+
+test("Kimi fetch wrapper strips OpenAI SDK fingerprint headers only for Kimi hosts", async () => {
+  const calls: Array<{ url: string; headers: Record<string, string> }> = []
+  const wrapped = createKimiFetchWrapper((async (input: RequestInfo | URL, init?: RequestInit) => {
+    calls.push({
+      url: input instanceof Request ? input.url : String(input),
+      headers: Object.fromEntries(new Headers(init?.headers).entries()),
+    })
+    return new Response("{}", { status: 200, headers: { "content-type": "application/json" } })
+  }) as typeof fetch)
+
+  await wrapped("https://api.kimi.com/coding/v1/chat/completions", {
+    headers: {
+      "x-stainless-lang": "js",
+      "User-Agent": "KimiCLI/1.37.0",
+    },
+  })
+  await wrapped("https://api.openai.com/v1/chat/completions", {
+    headers: {
+      "x-stainless-lang": "js",
+      "User-Agent": "KimiCLI/1.37.0",
+    },
+  })
+
+  expect(calls[0]?.headers["x-stainless-lang"]).toBeUndefined()
+  expect(calls[0]?.headers["user-agent"] ?? calls[0]?.headers["User-Agent"]).toBe("KimiCLI/1.37.0")
+  expect(calls[1]?.headers["x-stainless-lang"]).toBe("js")
 })

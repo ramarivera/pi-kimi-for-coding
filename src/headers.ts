@@ -89,3 +89,41 @@ export function kimiHeaders(): Record<string, string> {
     "X-Msh-Os-Version": asciiHeaderValue(os.version?.() || `${os.type()} ${os.release()}`),
   }
 }
+
+export function isKimiApiUrl(input: RequestInfo | URL): boolean {
+  const raw = input instanceof Request ? input.url : String(input)
+  try {
+    const url = new URL(raw)
+    return url.hostname === "api.kimi.com" || url.hostname === "auth.kimi.com"
+  } catch {
+    return false
+  }
+}
+
+export function stripOpenAISDKFingerprintHeaders(headers: Headers): Headers {
+  const next = new Headers(headers)
+  for (const key of [...next.keys()]) {
+    if (key.toLowerCase().startsWith("x-stainless-")) {
+      next.delete(key)
+    }
+  }
+  return next
+}
+
+export function createKimiFetchWrapper(baseFetch: typeof fetch): typeof fetch {
+  return (async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (!isKimiApiUrl(input)) {
+      return baseFetch(input, init)
+    }
+
+    const request = input instanceof Request ? input : undefined
+    const mergedHeaders = new Headers(request?.headers)
+    new Headers(init?.headers).forEach((value, key) => mergedHeaders.set(key, value))
+    const cleanedHeaders = stripOpenAISDKFingerprintHeaders(mergedHeaders)
+
+    return baseFetch(input, {
+      ...init,
+      headers: cleanedHeaders,
+    })
+  }) as typeof fetch
+}
