@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { calculateCost, type Api, type Model, type Usage } from "@mariozechner/pi-ai"
 import extension, { DEFAULT_MODELS, applyKimiPayload, modifyKimiModelsForCredentials, normalizeReasoningLevel } from "../src/index.ts"
 import { MODEL_ID, PROVIDER_ID } from "../src/constants.ts"
 
@@ -41,6 +42,34 @@ test("modifyKimiModelsForCredentials patches runtime model metadata from login d
 
 test("Kimi model advertises both text and image input", () => {
   expect(DEFAULT_MODELS[0]?.input).toEqual(["text", "image"])
+})
+
+test("Kimi model reports K2.6 costs from models.dev in Pi per-million-token units", () => {
+  expect(DEFAULT_MODELS[0]?.cost).toEqual({
+    input: 0.95,
+    output: 4,
+    cacheRead: 0.16,
+    cacheWrite: 0,
+  })
+})
+
+test("Pi cost calculation prices Kimi usage from the model metadata", () => {
+  const usage: Usage = {
+    input: 1_000_000,
+    output: 1_000_000,
+    cacheRead: 1_000_000,
+    cacheWrite: 1_000_000,
+    totalTokens: 4_000_000,
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+  }
+
+  expect(calculateCost(DEFAULT_MODELS[0] as Model<Api>, usage)).toEqual({
+    input: 0.95,
+    output: 4,
+    cacheRead: 0.16,
+    cacheWrite: 0,
+    total: 5.11,
+  })
 })
 
 test("extension registers the custom provider with Pi", () => {
