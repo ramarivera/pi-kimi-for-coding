@@ -1,0 +1,7 @@
+{
+  "defaultProvider": "kimi-for-coding-oauth",
+  "defaultModel": "kimi-for-coding",
+  "extensions": [
+    "../../src/index.ts"
+  ]
+}
