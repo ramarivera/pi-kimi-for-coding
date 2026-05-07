@@ -3,6 +3,7 @@ import { spawn } from "node:child_process"
 import path from "node:path"
 
 const E2E_DIR = path.resolve(import.meta.dir, "..")
+const E2E_AGENT_DIR = path.join(E2E_DIR, ".pi", "agent")
 const EXTENSION_PATH = path.join(E2E_DIR, "..", "src", "index.ts")
 
 test("e2e: pi loads the local extension and lists the Kimi model", async () => {
@@ -13,6 +14,7 @@ test("e2e: pi loads the local extension and lists the Kimi model", async () => {
     "kimi-for-coding",
   ], {
     cwd: E2E_DIR,
+    env: { ...process.env, PI_CODING_AGENT_DIR: E2E_AGENT_DIR },
   })
 
   let stdout = ""
@@ -43,6 +45,7 @@ test("e2e: pi -p with the local extension does not immediately fail with 403", a
     "say hi",
   ], {
     cwd: E2E_DIR,
+    env: { ...process.env, PI_CODING_AGENT_DIR: E2E_AGENT_DIR },
   })
 
   let stdout = ""
