@@ -1,4 +1,4 @@
-import type { OAuthCredentials, OAuthLoginCallbacks } from "@mariozechner/pi-ai"
+import type { OAuthCredentials, OAuthLoginCallbacks } from "@earendil-works/pi-ai"
 import {
   API_BASE_URL,
   OAUTH_CLIENT_ID,

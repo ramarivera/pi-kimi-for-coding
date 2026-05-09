@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { calculateCost, type Api, type Model, type Usage } from "@mariozechner/pi-ai"
+import { calculateCost, type Api, type Model, type Usage } from "@earendil-works/pi-ai"
 import extension, { DEFAULT_MODELS, applyKimiPayload, modifyKimiModelsForCredentials, normalizeReasoningLevel } from "../src/index.ts"
 import { ANTHROPIC_API_BASE_URL, MODEL_ID, OPENAI_API_BASE_URL, PROVIDER_ID } from "../src/constants.ts"
 import { resolveKimiForCodingConfig } from "../src/config.ts"

@@ -1,5 +1,5 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent"
-import type { Api, Model, OAuthCredentials } from "@mariozechner/pi-ai"
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
+import type { Api, Model, OAuthCredentials } from "@earendil-works/pi-ai"
 import { PROVIDER_ID } from "./constants.ts"
 import { loadKimiForCodingConfig } from "./config.ts"
 import { createKimiModels, DEFAULT_MODELS, modifyKimiModelsForCredentials } from "./models.ts"

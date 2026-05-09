@@ -1,5 +1,5 @@
-import type { Api, Model, SimpleStreamOptions } from "@mariozechner/pi-ai"
-import { streamSimpleAnthropic, streamSimpleOpenAICompletions } from "@mariozechner/pi-ai"
+import type { Api, Model, SimpleStreamOptions } from "@earendil-works/pi-ai"
+import { streamSimpleAnthropic, streamSimpleOpenAICompletions } from "@earendil-works/pi-ai"
 import { createKimiFetchWrapper, kimiHeaders } from "./headers.ts"
 import { applyKimiPayload } from "./payload.ts"
 
