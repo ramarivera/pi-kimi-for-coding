@@ -28,10 +28,40 @@ function createKimiTestModel() {
   }
 }
 
+function createKimiAnthropicTestModel() {
+  return {
+    ...createKimiTestModel(),
+    api: "anthropic-messages" as const,
+    baseUrl: "https://api.kimi.com/coding/",
+  }
+}
+
 function kimiSse(content = "hi") {
   return `data: {"id":"test","object":"chat.completion.chunk","model":"${MODEL_ID}","choices":[{"delta":{"content":"${content}"},"index":0,"finish_reason":"stop"}]}
 
 data: [DONE]
+
+`
+}
+
+function anthropicSse(content = "hi") {
+  return `event: message_start
+data: {"type":"message_start","message":{"id":"msg_1","type":"message","role":"assistant","content":[],"model":"${MODEL_ID}","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":1,"output_tokens":0}}}
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"${content}"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":1}}
+
+event: message_stop
+data: {"type":"message_stop"}
 
 `
 }
@@ -123,6 +153,60 @@ test("streamKimiForCoding sends Kimi headers and strips OpenAI SDK fingerprint h
     expect(body.prompt_cache_key).toBe("sess-1")
     expect(body.reasoning_effort).toBe("medium")
     expect(body.thinking).toEqual({ type: "enabled" })
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("streamKimiForCoding sends Kimi identity headers on the Anthropic-compatible endpoint", async () => {
+  const originalFetch = globalThis.fetch
+  const calls: Array<{ url: string; headers: Record<string, string>; body?: string }> = []
+
+  const mockFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const request = input instanceof Request ? input : undefined
+    const headers = new Headers(request?.headers)
+    new Headers(init?.headers).forEach((value, key) => headers.set(key, value))
+
+    calls.push({
+      url: request?.url ?? String(input),
+      headers: Object.fromEntries(headers.entries()),
+      body: typeof init?.body === "string" ? init.body : undefined,
+    })
+
+    return new Response(anthropicSse(), {
+      status: 200,
+      headers: {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+      },
+    })
+  }) as typeof fetch
+  globalThis.fetch = mockFetch
+
+  try {
+    const stream = streamKimiForCoding(createKimiAnthropicTestModel() as any, {
+      messages: [{ role: "user", content: "hi" }],
+    } as any, {
+      apiKey: "oauth-access-token",
+      headers: {
+        "x-stainless-lang": "js",
+        "User-Agent": "Anthropic/JS",
+      },
+      sessionId: "sess-anthropic",
+      reasoning: "medium",
+    })
+
+    await consumeStream(stream)
+
+    const messageCall = calls.find((c) => c.url.includes("/messages"))
+    expect(messageCall).toBeDefined()
+    expect(messageCall!.url).toContain("https://api.kimi.com/coding/")
+    expect(messageCall!.headers["authorization"]).toBe("Bearer oauth-access-token")
+    expect(messageCall!.headers["user-agent"]).toBe("KimiCLI/1.37.0")
+    expect(messageCall!.headers["x-msh-platform"]).toBe("kimi_cli")
+    expect(messageCall!.headers["x-msh-device-id"]).toMatch(/^[0-9a-f]{32}$/)
+    expect(messageCall!.headers["x-msh-version"]).toBeDefined()
+    expect(messageCall!.headers["x-stainless-lang"]).toBe("js")
   } finally {
     globalThis.fetch = originalFetch
   }

@@ -1,7 +1,9 @@
 import { expect, test } from "bun:test"
 import { calculateCost, type Api, type Model, type Usage } from "@mariozechner/pi-ai"
 import extension, { DEFAULT_MODELS, applyKimiPayload, modifyKimiModelsForCredentials, normalizeReasoningLevel } from "../src/index.ts"
-import { MODEL_ID, PROVIDER_ID } from "../src/constants.ts"
+import { ANTHROPIC_API_BASE_URL, MODEL_ID, OPENAI_API_BASE_URL, PROVIDER_ID } from "../src/constants.ts"
+import { resolveKimiForCodingConfig } from "../src/config.ts"
+import { createKimiModels } from "../src/models.ts"
 
 test("normalizeReasoningLevel maps pi thinking levels to Kimi wire semantics", () => {
   expect(normalizeReasoningLevel(undefined)).toEqual({ thinking: { type: "disabled" } })
@@ -44,6 +46,25 @@ test("Kimi model advertises both text and image input", () => {
   expect(DEFAULT_MODELS[0]?.input).toEqual(["text", "image"])
 })
 
+test("Kimi endpoint config defaults to Anthropic-compatible protocol", () => {
+  const resolved = resolveKimiForCodingConfig({ protocol: "anthropic" })
+
+  expect(DEFAULT_MODELS[0]?.api).toBe("anthropic-messages")
+  expect(DEFAULT_MODELS[0]?.baseUrl).toBe(ANTHROPIC_API_BASE_URL)
+  expect(resolved).toMatchObject({
+    protocol: "anthropic",
+    api: "anthropic-messages",
+    baseUrl: ANTHROPIC_API_BASE_URL,
+  })
+})
+
+test("Kimi endpoint config can still select OpenAI-compatible protocol", () => {
+  const [model] = createKimiModels({ protocol: "openai" })
+
+  expect(model?.api).toBe("openai-completions")
+  expect(model?.baseUrl).toBe(OPENAI_API_BASE_URL)
+})
+
 test("Kimi model reports K2.6 costs from models.dev in Pi per-million-token units", () => {
   expect(DEFAULT_MODELS[0]?.cost).toEqual({
     input: 0.95,
@@ -82,6 +103,9 @@ test("extension registers the custom provider with Pi", () => {
 
   expect(captured?.name).toBe(PROVIDER_ID)
   expect((captured?.config as { models: Array<{ id: string }> }).models[0]?.id).toBe(MODEL_ID)
+  expect((captured?.config as { api: string }).api).toBe("anthropic-messages")
+  expect((captured?.config as { baseUrl: string }).baseUrl).toBe(ANTHROPIC_API_BASE_URL)
+  expect((captured?.config as { streamSimple?: unknown }).streamSimple).toBeTypeOf("function")
   expect((captured?.config as { oauth: { name: string } }).oauth.name).toBe("Kimi For Coding")
 })
 

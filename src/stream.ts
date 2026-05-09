@@ -1,5 +1,5 @@
 import type { Api, Model, SimpleStreamOptions } from "@mariozechner/pi-ai"
-import { streamSimpleOpenAICompletions } from "@mariozechner/pi-ai"
+import { streamSimpleAnthropic, streamSimpleOpenAICompletions } from "@mariozechner/pi-ai"
 import { createKimiFetchWrapper, kimiHeaders } from "./headers.ts"
 import { applyKimiPayload } from "./payload.ts"
 
@@ -10,6 +10,36 @@ let fetchOverrideRefCount = 0
 let originalFetch: typeof globalThis.fetch | undefined
 
 export function streamKimiForCoding(
+  model: Model<Api>,
+  context: Parameters<typeof streamSimpleOpenAICompletions>[1],
+  options?: SimpleStreamOptions,
+) {
+  if (model.api === "anthropic-messages") {
+    return streamKimiAnthropic(model as Model<"anthropic-messages">, context, options)
+  }
+
+  return streamKimiOpenAI(model, context, options)
+}
+
+function streamKimiAnthropic(
+  model: Model<"anthropic-messages">,
+  context: Parameters<typeof streamSimpleAnthropic>[1],
+  options?: SimpleStreamOptions,
+) {
+  const apiKey = options?.apiKey
+  const mergedHeaders = {
+    ...(options?.headers ?? {}),
+    ...kimiHeaders(),
+    ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+  }
+
+  return streamSimpleAnthropic(model, context, {
+    ...options,
+    headers: mergedHeaders,
+  })
+}
+
+function streamKimiOpenAI(
   model: Model<Api>,
   context: Parameters<typeof streamSimpleOpenAICompletions>[1],
   options?: SimpleStreamOptions,

@@ -1,4 +1,5 @@
-import { API_BASE_URL, DEFAULT_CONTEXT_WINDOW, DEFAULT_MAX_TOKENS, MODEL_ID, PROVIDER_ID } from "./constants.ts"
+import { DEFAULT_CONTEXT_WINDOW, DEFAULT_MAX_TOKENS, MODEL_ID, PROVIDER_ID } from "./constants.ts"
+import { resolveKimiForCodingConfig, type KimiForCodingConfig, type ResolvedKimiForCodingConfig } from "./config.ts"
 import type { KimiOAuthCredentials } from "./oauth.ts"
 
 export const KIMI_K2_6_COST = {
@@ -8,13 +9,14 @@ export const KIMI_K2_6_COST = {
   cacheWrite: 0,
 }
 
-export const DEFAULT_MODELS = [
-  {
+export function createKimiModels(config: KimiForCodingConfig | ResolvedKimiForCodingConfig) {
+  const resolved = "baseUrl" in config ? config : resolveKimiForCodingConfig(config)
+  const model = {
     id: MODEL_ID,
     name: "Kimi For Coding",
-    api: "openai-completions" as const,
+    api: resolved.api,
     provider: PROVIDER_ID,
-    baseUrl: API_BASE_URL,
+    baseUrl: resolved.baseUrl,
     reasoning: true,
     input: ["text", "image"] as Array<"text" | "image">,
     cost: KIMI_K2_6_COST,
@@ -31,10 +33,14 @@ export const DEFAULT_MODELS = [
         xhigh: "high",
       },
     },
-  },
-]
+  }
 
-export function modifyKimiModelsForCredentials<T extends Array<Record<string, unknown>>>(
+  return [model]
+}
+
+export const DEFAULT_MODELS = createKimiModels({ protocol: "anthropic" })
+
+export function modifyKimiModelsForCredentials<T extends Array<{ id: string }>>(
   models: T,
   credentials: Partial<KimiOAuthCredentials>,
 ) {
@@ -43,11 +49,11 @@ export function modifyKimiModelsForCredentials<T extends Array<Record<string, un
 
     return {
       ...model,
-      name: credentials.modelDisplay || model.name,
+      name: credentials.modelDisplay || (model as { name?: unknown }).name,
       contextWindow:
         typeof credentials.contextLength === "number" && credentials.contextLength > 0
           ? credentials.contextLength
-          : model.contextWindow,
+          : (model as { contextWindow?: unknown }).contextWindow,
       wireModelId: credentials.wireModelId || model.id,
     }
   }) as T

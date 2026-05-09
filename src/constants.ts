@@ -9,7 +9,10 @@ export const OAUTH_SCOPE = "kimi-code"
 export const OAUTH_DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
 export const OAUTH_REFRESH_GRANT = "refresh_token"
 
-export const API_BASE_URL = "https://api.kimi.com/coding/v1"
+export const OPENAI_API_BASE_URL = "https://api.kimi.com/coding/v1"
+export const ANTHROPIC_API_BASE_URL = "https://api.kimi.com/coding/"
+export const DEFAULT_PROTOCOL = "anthropic"
+export const API_BASE_URL = OPENAI_API_BASE_URL
 export const MODEL_ID = "kimi-for-coding"
 export const PROVIDER_ID = "kimi-for-coding-oauth"
 export const DEFAULT_CONTEXT_WINDOW = 262_144

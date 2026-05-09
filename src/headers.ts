@@ -120,6 +120,9 @@ export function createKimiFetchWrapper(baseFetch: typeof fetch): typeof fetch {
     const mergedHeaders = new Headers(request?.headers)
     new Headers(init?.headers).forEach((value, key) => mergedHeaders.set(key, value))
     const cleanedHeaders = stripOpenAISDKFingerprintHeaders(mergedHeaders)
+    for (const [key, value] of Object.entries(kimiHeaders())) {
+      cleanedHeaders.set(key, value)
+    }
 
     return baseFetch(input, {
       ...init,
